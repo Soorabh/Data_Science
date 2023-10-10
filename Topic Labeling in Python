@@ -1,0 +1,107 @@
+#!/usr/bin/env python
+# coding: utf-8
+
+# In[1]:
+
+
+# importing pandas for data manipulation
+
+import pandas as pd
+
+# First we loaded the dataset
+Topic_data = pd.read_csv('Topic Detection_Dataset.csv')
+Topic_data.head()
+
+
+# In[2]:
+
+
+# Step 2: Preprocess the text data
+import gensim
+import nltk
+from nltk.corpus import stopwords
+from nltk.stem import WordNetLemmatizer
+from gensim import corpora, models
+
+nltk.download('punkt')
+nltk.download('stopwords')
+nltk.download('wordnet')
+
+# Tokenization
+Topic_data['cleaned_text'] = Topic_data['review'].apply(nltk.word_tokenize)
+
+
+# In[3]:
+
+
+# Remove stopwords
+stopwords_set = set(stopwords.words('english'))
+
+# Convert the stopwords set to a list
+stopwords_list = list(stopwords_set)
+
+# Apply the lambda function to the `cleaned_text` column
+Topic_data['cleaned_text'] = Topic_data['cleaned_text'].apply(lambda x: [word for word in x if word.lower() not in stopwords_list])
+Topic_data.head()
+
+
+# In[4]:
+
+
+# Lemmatization
+lemmatizer = WordNetLemmatizer()
+Topic_data['cleaned_text'] = Topic_data['cleaned_text'].apply(lambda x: [lemmatizer.lemmatize(word) for word in x])
+Topic_data['cleaned_text_str'] = Topic_data['cleaned_text'].apply(' '.join)
+
+
+# In[9]:
+
+
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.decomposition import LatentDirichletAllocation
+
+vectorizer = TfidfVectorizer()
+X = vectorizer.fit_transform(Topic_data['cleaned_text_str'])
+
+# Train a topic model
+lda = LatentDirichletAllocation(n_components=10)
+lda.fit(X)
+
+# Identify the most prominent topic for each review
+topic_assignments = lda.transform(X)
+
+Topic_data['topic_number'] = topic_assignments.argmax(axis=1) + 1  # Adding 1 to start topic numbering from 1
+
+# Task 1 - Output
+task1_output = Topic_data[['review_id', 'review', 'topic_number']]
+print("Task 1 - Sample Output:")
+print(task1_output)
+
+
+# Create a dictionary of topic labels based on the domain and text context
+topic_labels = {
+    1: "Device Audio Quality & Performance",
+    2: "Ease of installation",
+    3: "Packaging & Delivery",
+    4: "Equipment & Tool Setup",
+    5: "Software Usage & Competitor Comparison",
+    6: "Battery Usage & Charging Time",
+    7: "Camera Image Quality & Capability",
+    8: "Customer Service & Support",
+    9: "Overheating & System Issues",
+    10: "Impressive Visuals & Color Quality"
+}
+
+# Print Task 2 Output
+print("\nTask 2 - Sample Output:")
+for topic_number, topic_label in topic_labels.items():
+    print(topic_number, topic_label)
+
+
+# In[ ]:
+
+
+
+
